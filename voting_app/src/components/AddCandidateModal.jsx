@@ -74,7 +74,7 @@ function AddCandidateModal() {
               <input
                 type="file"
                 name="image"
-                accept="png, jpg, jpeg, avif, webp"
+                accept="image/png, image/jpeg, image/jpg, image/webp, image/avif"
                 onChange={(e) => setImage(e.target.files[0])}
               />
             </div>

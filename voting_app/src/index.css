@@ -394,12 +394,21 @@ justify-content: space-between;
 }
 
 .candidate__image {
-aspect-ratio: 1/1;
+aspect-ratio: 4/5;
 overflow: hidden;
 margin-inline: auto;
 width: 100%;
 margin-bottom: 1.5rem;
+border-radius: var(--radius-2);
+box-shadow: 0 0.2rem 0.4rem rgba(0,0,0,0.1);
+}
 
+.candidate__image img {
+object-fit: cover;
+object-position: center top;
+width: 100%;
+height: 100%;
+display: block;
 }
 .candidate small{
   display: block;
@@ -600,9 +609,18 @@ resize: vertical;
   text-align: center; 
 }
 .electionCandidate__image{
-  height: 25rem;
+  aspect-ratio: 4/5;
   overflow: hidden;
+  border-radius: var(--radius-2);
+  box-shadow: 0 0.2rem 0.4rem rgba(0,0,0,0.1);
+}
 
+.electionCandidate__image img {
+  object-fit: cover;
+  object-position: center top;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 .electionCandidate h5 {
   margin: 0.7rem 0 0.3rem;
