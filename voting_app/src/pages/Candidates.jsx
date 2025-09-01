@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useSelector, useDispatch} from 'react-redux'
 import { useParams} from "react-router-dom"
 import Candidate from '../components/Candidate';
@@ -12,10 +12,9 @@ const Candidates = () => {
   const dispatch = useDispatch();
   const { candidates, loading, error, currentVoter, currentElection } = useSelector(state => state.vote);
   const voteCandidateModalShowing = useSelector( state => state.ui.voteCandidateModalShowing)
-  const [votingAllowed, setVotingAllowed] = useState(false);
-
-  // Fetch candidates and election details
-  useEffect(() => {
+  
+  // Memoized fetch function to prevent unnecessary re-fetches
+  const fetchElectionData = useCallback(() => {
     if (currentVoter.token && id) {
       dispatch(fetchElectionCandidates(id));
       dispatch(fetchElection(id));
@@ -23,16 +22,19 @@ const Candidates = () => {
       dispatch(voterActions.changeSelectedElection(id));
     }
   }, [currentVoter.token, id, dispatch]);
-  
-  // Check if voting is currently allowed
+
+  // Fetch candidates and election details only once on mount or key dependencies change
   useEffect(() => {
-    if (currentElection) {
-      const now = new Date();
-      const startTime = new Date(currentElection.votingStartTime);
-      const endTime = new Date(currentElection.votingEndTime);
-      const allowed = now >= startTime && now <= endTime && currentElection.status === 'active';
-      setVotingAllowed(allowed);
-    }
+    fetchElectionData();
+  }, [fetchElectionData]);
+  
+  // Memoize voting allowed check to prevent unnecessary calculations
+  const votingAllowed = useMemo(() => {
+    if (!currentElection) return false;
+    const now = new Date();
+    const startTime = new Date(currentElection.votingStartTime);
+    const endTime = new Date(currentElection.votingEndTime);
+    return now >= startTime && now <= endTime && currentElection.status === 'active';
   }, [currentElection]);
 
   return (

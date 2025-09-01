@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import ElectionCandidate from '../components/ElectionCandidate'
 import { IoMdAddCircleOutline, IoMdDownload, IoMdPeople } from 'react-icons/io'
@@ -17,6 +17,9 @@ const ElectionDetail = () => {
   const openAddCandidateModal = useSelector(state => state.ui.addCandidateModalShowing)
   const [showVoters, setShowVoters] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(Date.now())
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const refreshTimeoutRef = useRef(null)
+  const intervalRef = useRef(null)
 
   // Fetch election details, candidates, and voters when component mounts
   useEffect(() => {
@@ -32,16 +35,51 @@ const ElectionDetail = () => {
     }
   }, [currentVoter.token, currentVoter.isAdmin, id, dispatch])
   
-  // Auto-refresh voter data periodically when viewing voters
+  // Debounced refresh function to prevent excessive API calls
+  const debouncedRefreshVoters = useCallback(() => {
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current)
+    }
+    
+    refreshTimeoutRef.current = setTimeout(async () => {
+      if (currentVoter.isAdmin && showVoters && id && !isRefreshing) {
+        setIsRefreshing(true)
+        try {
+          await dispatch(fetchElectionVoters(id)).unwrap()
+        } catch (error) {
+          console.error('Failed to refresh voters:', error)
+        } finally {
+          setIsRefreshing(false)
+        }
+      }
+    }, 2000) // 2 second debounce
+  }, [currentVoter.isAdmin, showVoters, id, dispatch, isRefreshing])
+  
+  // Optimized auto-refresh with longer intervals and better cleanup
   useEffect(() => {
     if (currentVoter.isAdmin && showVoters && id) {
-      const interval = setInterval(() => {
-        dispatch(fetchElectionVoters(id))
-      }, 10000) // Refresh every 10 seconds
+      // Clear any existing interval
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
       
-      return () => clearInterval(interval)
+      // Set up new interval with longer delay to reduce blinking
+      intervalRef.current = setInterval(() => {
+        debouncedRefreshVoters()
+      }, 15000) // Increased to 15 seconds to reduce frequency
+      
+      return () => {
+        if (intervalRef.current) {
+          clearInterval(intervalRef.current)
+          intervalRef.current = null
+        }
+        if (refreshTimeoutRef.current) {
+          clearTimeout(refreshTimeoutRef.current)
+          refreshTimeoutRef.current = null
+        }
+      }
     }
-  }, [currentVoter.isAdmin, showVoters, id, dispatch])
+  }, [currentVoter.isAdmin, showVoters, id, debouncedRefreshVoters])
 
   const openModal = () => {
     dispatch(uiActions.openAddCandidateModal());

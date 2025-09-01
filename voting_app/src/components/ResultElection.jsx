@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, memo } from "react";
 import CandidateRating from "../components/CandidateRating";
 import { Link } from "react-router-dom"
 import { useDispatch, useSelector } from 'react-redux'
@@ -10,32 +10,58 @@ const ResultElection = ({ _id, id, title, thumbnail }) => {
   const electionId = _id || id;
   const [electionCandidates, setElectionCandidates] = useState([]);
   const [totalVotes, setTotalVotes] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [lastFetchTime, setLastFetchTime] = useState(0);
   const dispatch = useDispatch();
   const { currentVoter, candidates: globalCandidates } = useSelector(state => state.vote);
   
   // Check if current user has voted in this election
   const hasUserVoted = currentVoter.votedElection && currentVoter.votedElection.includes(electionId);
 
-  // Fetch candidates for this election and update when global candidates change
-  useEffect(() => {
-    const fetchCandidates = async () => {
-      if (currentVoter.token && electionId) {
-        try {
-          const result = await dispatch(fetchElectionCandidates(electionId)).unwrap();
-          setElectionCandidates(result);
-          // Calculate total votes
-          const total = result.reduce((sum, candidate) => sum + (candidate.voteCount || 0), 0);
-          setTotalVotes(total);
-        } catch (error) {
-          console.error('Failed to fetch candidates:', error);
-          setElectionCandidates([]);
-          setTotalVotes(0);
-        }
-      }
-    };
+  // Memoized fetch function to prevent unnecessary re-fetches
+  const fetchCandidates = useCallback(async () => {
+    if (!currentVoter.token || !electionId) return;
     
+    // Prevent too frequent requests (minimum 5 seconds between fetches)
+    const now = Date.now();
+    if (now - lastFetchTime < 5000) return;
+    
+    setIsLoading(true);
+    try {
+      const result = await dispatch(fetchElectionCandidates(electionId)).unwrap();
+      setElectionCandidates(result);
+      // Calculate total votes
+      const total = result.reduce((sum, candidate) => sum + (candidate.voteCount || 0), 0);
+      setTotalVotes(total);
+      setLastFetchTime(now);
+    } catch (error) {
+      console.error('Failed to fetch candidates:', error);
+      setElectionCandidates([]);
+      setTotalVotes(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentVoter.token, electionId, dispatch, lastFetchTime]);
+
+  // Only fetch on initial load and when critical dependencies change
+  useEffect(() => {
     fetchCandidates();
-  }, [currentVoter.token, electionId, dispatch, globalCandidates]);
+  }, [fetchCandidates]);
+  
+  // Separate effect for global candidates updates (less frequent)
+  useEffect(() => {
+    if (globalCandidates.length > 0 && electionCandidates.length > 0) {
+      // Only update if there are actual changes in vote counts
+      const hasChanges = globalCandidates.some(globalCandidate => {
+        const localCandidate = electionCandidates.find(c => c._id === globalCandidate._id);
+        return localCandidate && localCandidate.voteCount !== globalCandidate.voteCount;
+      });
+      
+      if (hasChanges) {
+        fetchCandidates();
+      }
+    }
+  }, [globalCandidates, fetchCandidates, electionCandidates]);
   return (
     <>
       <article className="result">
@@ -58,7 +84,11 @@ const ResultElection = ({ _id, id, title, thumbnail }) => {
           </div>
         </div>
         <ul className="result__list">
-            {electionCandidates.length > 0 ? (
+            {isLoading && electionCandidates.length === 0 ? (
+              <li className="loading-candidates">
+                <p>Loading candidates...</p>
+              </li>
+            ) : electionCandidates.length > 0 ? (
               electionCandidates.map(candidate =>
                 <CandidateRating
                   key={candidate._id || candidate.id}
@@ -83,5 +113,6 @@ const ResultElection = ({ _id, id, title, thumbnail }) => {
   );
 };
 
-export default ResultElection;
+// Memoize component to prevent unnecessary re-renders when props haven't changed
+export default memo(ResultElection);
 

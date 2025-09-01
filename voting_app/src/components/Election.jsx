@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo, useCallback, useMemo } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import { uiActions } from '../store/ui-slice'
@@ -13,7 +13,8 @@ const Election = ({ _id, id, title, description, thumbnail, votingStartTime, vot
   const dispatch = useDispatch()
   const { currentVoter } = useSelector(state => state.vote)
   
-  const election = {
+  // Memoize election object to prevent unnecessary re-renders
+  const election = useMemo(() => ({
     _id: electionId,
     title,
     description,
@@ -22,34 +23,35 @@ const Election = ({ _id, id, title, description, thumbnail, votingStartTime, vot
     votingEndTime,
     status,
     duration
-  };
+  }), [electionId, title, description, thumbnail, votingStartTime, votingEndTime, status, duration]);
   
-  const openModal = () => {
+  // Memoize handlers to prevent unnecessary re-renders
+  const openModal = useCallback(() => {
     // Set the election ID to update and open modal
     dispatch(uiActions.openUpdateElectionModal())
     // Also set which election is being updated
     dispatch(uiActions.setElectionToUpdate(election))
-  }
+  }, [dispatch, election])
   
-  const handleStatusChange = async (electionId, newStatus) => {
+  const handleStatusChange = useCallback(async (electionId, newStatus) => {
     try {
       await dispatch(updateElectionStatus({ electionId, status: newStatus })).unwrap();
       toast.success(`Election status updated to ${newStatus}`);
     } catch (error) {
       toast.error(`Failed to update status: ${error.message}`);
     }
-  };
+  }, [dispatch]);
   
-  const handleStartVoting = async (electionId) => {
+  const handleStartVoting = useCallback(async (electionId) => {
     try {
       await dispatch(startVoting(electionId)).unwrap();
       toast.success('Voting started successfully!');
     } catch (error) {
       toast.error(`Failed to start voting: ${error.message}`);
     }
-  };
+  }, [dispatch]);
   
-  const handleDeleteElection = async (electionId) => {
+  const handleDeleteElection = useCallback(async (electionId) => {
     if (window.confirm(`Are you sure you want to delete "${title}"? This action cannot be undone.`)) {
       try {
         await dispatch(deleteElection(electionId)).unwrap();
@@ -58,15 +60,15 @@ const Election = ({ _id, id, title, description, thumbnail, votingStartTime, vot
         toast.error(`Failed to delete election: ${error.message}`);
       }
     }
-  };
+  }, [dispatch, title]);
   
-  // Check if voting is currently allowed
-  const isVotingAllowed = () => {
+  // Memoize voting status check to prevent unnecessary calculations
+  const isVotingAllowed = useMemo(() => {
     const now = new Date();
     const startTime = new Date(votingStartTime);
     const endTime = new Date(votingEndTime);
     return now >= startTime && now <= endTime && status === 'active';
-  };
+  }, [votingStartTime, votingEndTime, status]);
   return (
     <>
        <article className="election">
@@ -90,7 +92,7 @@ const Election = ({ _id, id, title, description, thumbnail, votingStartTime, vot
               <button className="btn sm" disabled title="Admin users cannot vote">
                 Admin - No Voting
               </button>
-            ) : isVotingAllowed() ? (
+            ) : isVotingAllowed ? (
               <Link to={`/elections/${electionId}/candidates`} className="btn sm success">Vote Now</Link>
             ) : (
               <button className="btn sm" disabled title="Voting not currently available">
@@ -117,4 +119,5 @@ const Election = ({ _id, id, title, description, thumbnail, votingStartTime, vot
   )
 }
 
-export default Election
+// Memoize component to prevent unnecessary re-renders when props haven't changed
+export default memo(Election)
