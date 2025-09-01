@@ -12,7 +12,17 @@ const { updateElectionStatusByTime } = require('./controllers/electionController
 const app = express();
 app.use(express.json({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({ credentials: true, origin: ["http://localhost:5173"] }));
+// CORS configuration for production and development
+const allowedOrigins = [
+  "http://localhost:5173", // Development
+  "http://localhost:3000", // Development alternative
+  process.env.FRONTEND_URL, // Production URL from environment variable
+].filter(Boolean); // Remove undefined values
+
+app.use(cors({ 
+  credentials: true, 
+  origin: allowedOrigins
+}));
 
 app.use(upload())
 
@@ -20,7 +30,7 @@ app.use("/api", Routes);
 app.use(notFound)
 app.use(errorHandler)
 
-const PORT =  3000;
+const PORT = process.env.PORT || 3000;
 
 connect(process.env.MONGO_DB_URL).then(
      app.listen(PORT, () => {
