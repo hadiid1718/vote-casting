@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 const { connect } = require("mongoose");
 require("dotenv").config("");
 const upload = require("express-fileupload")
@@ -25,6 +26,9 @@ app.use(cors({
 }));
 
 app.use(upload())
+
+// Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use("/api", Routes);
 app.use(notFound)

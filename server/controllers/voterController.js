@@ -64,8 +64,15 @@ const registerVoter = async (req, res, next) => {
 // ======================== GENERATING TOKEN =========================
 // ======================== GENERATING TOKEN =========================
 const generateToken = (payload) => {
-  const token = jwt.sign(payload, process.env.JWT_SEC, { expiresIn: "1d"})
+  // Extend token expiration to 7 days for better user experience
+  const token = jwt.sign(payload, process.env.JWT_SEC, { expiresIn: "7d"})
   return token;
+}
+
+const generateRefreshToken = (payload) => {
+  // Refresh token valid for 30 days
+  const refreshToken = jwt.sign(payload, process.env.JWT_SEC, { expiresIn: "30d"})
+  return refreshToken;
 }
 
 // ========== LOGIN VOTER
@@ -91,7 +98,8 @@ const loginVoter = async (req, res, next) => {
       }
       const { _id: id, isAdmin, votedElection } = voter;
       const token = generateToken({ id, isAdmin})
-      res.json({ token, id, isAdmin, votedElection})
+      const refreshToken = generateRefreshToken({ id, isAdmin})
+      res.json({ token, refreshToken, id, isAdmin, votedElection})
 
 
     
@@ -114,4 +122,37 @@ const getVoter = async (req, res, next) => {
   }
 };
 
-module.exports = { registerVoter, loginVoter, getVoter };
+// ========== REFRESH TOKEN
+// POST: api/voters/refresh-token
+//UNPROTECTED
+const refreshToken = async (req, res, next) => {
+  try {
+    const { refreshToken } = req.body;
+    
+    if (!refreshToken) {
+      return next(new HttpError("Refresh token is required", 422));
+    }
+    
+    // Verify refresh token
+    jwt.verify(refreshToken, process.env.JWT_SEC, (err, decoded) => {
+      if (err) {
+        return next(new HttpError("Invalid refresh token", 403));
+      }
+      
+      const { id, isAdmin } = decoded;
+      const newToken = generateToken({ id, isAdmin });
+      const newRefreshToken = generateRefreshToken({ id, isAdmin });
+      
+      res.json({ 
+        token: newToken, 
+        refreshToken: newRefreshToken,
+        id, 
+        isAdmin 
+      });
+    });
+  } catch (error) {
+    return next(new HttpError("Token refresh failed", 422));
+  }
+};
+
+module.exports = { registerVoter, loginVoter, getVoter, refreshToken };

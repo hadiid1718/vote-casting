@@ -1,0 +1,37 @@
+/* Blog Content Image Styles */
+
+.blog-content img,
+.blog-text img {
+  max-width: 500px !important;
+  width: 100% !important;
+  height: auto !important;
+  margin: 15px 0 !important;
+  border-radius: 8px !important;
+  display: block !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Ensure images don't overflow container */
+.blog-content,
+.blog-text {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Mobile responsive images */
+@media (max-width: 768px) {
+  .blog-content img,
+  .blog-text img {
+    max-width: 100% !important;
+    margin: 10px 0 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .blog-content img,
+  .blog-text img {
+    max-width: 100% !important;
+    margin: 8px 0 !important;
+    border-radius: 6px !important;
+  }
+}

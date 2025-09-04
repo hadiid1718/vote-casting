@@ -63,8 +63,11 @@ const voterSlice = createSlice({
       state.voters = [];
       state.currentElection = null;
       state.error = null;
+      // Clear all authentication data
       localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('currentUser');
+      localStorage.removeItem('tokenExpiry');
     },
   },
   extraReducers: (builder) => {
@@ -89,18 +92,23 @@ const voterSlice = createSlice({
       })
       .addCase(loginVoter.fulfilled, (state, action) => {
         state.loading = false;
-        // Backend returns: { token, id, isAdmin, votedElection }
-        const { token, id, isAdmin, votedElection } = action.payload;
+        // Backend returns: { token, refreshToken, id, isAdmin, votedElection }
+        const { token, refreshToken, id, isAdmin, votedElection } = action.payload;
         const userData = {
           id,
           token,
+          refreshToken,
           isAdmin,
           votedElection: votedElection || []
         };
         state.currentVoter = userData;
         
-        // Store in localStorage
+        // Store in localStorage with proper expiry handling
         localStorage.setItem('token', token);
+        localStorage.setItem('refreshToken', refreshToken);
+        // Set token expiry time (7 days from now)
+        const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
+        localStorage.setItem('tokenExpiry', expiryTime.toString());
         localStorage.setItem('currentUser', JSON.stringify(userData));
       })
       .addCase(loginVoter.rejected, (state, action) => {

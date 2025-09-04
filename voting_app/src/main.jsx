@@ -14,6 +14,9 @@ import ElectionDetail from "./pages/ElectionDetail"
 import Candidates from "./pages/Candidates"
 import Congrates from "./pages/Congrates"
 import Logout from "./pages/Logout"
+import BlogList from "./pages/BlogList"
+import BlogDetail from "./pages/BlogDetail"
+import CreateBlog from "./pages/CreateBlog"
 import ProtectedRoute from "./components/ProtectedRoute"
 import AdminRoute from "./components/AdminRoute"
 import store from './store/store.js'
@@ -25,9 +28,13 @@ const router  = createBrowserRouter([
     element: <App/>,
     errorElement: <ErrorPage/>,
     children: [
-      {
-        index: true,
-        element: <Login/>
+    {
+      index: true,
+      element: <BlogList/>
+    },
+    {
+      path: 'login',
+      element: <Login/>
     },
     {
       path: 'register',
@@ -57,7 +64,19 @@ const router  = createBrowserRouter([
       path: 'logout',
       element: <Logout/>
     },
-
+    // Blog routes
+    {
+      path: 'blogs',
+      element: <BlogList/>
+    },
+    {
+      path: 'blogs/create',
+      element: <AdminRoute><CreateBlog/></AdminRoute>
+    },
+    {
+      path: 'blogs/:id',
+      element: <BlogDetail/>
+    },
 
     ]
   }

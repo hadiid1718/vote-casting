@@ -8,7 +8,7 @@ const AdminRoute = ({ children }) => {
   // Check if user is authenticated and is admin
   if (!currentVoter.token) {
     // Redirect to login page if not authenticated
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
   
   if (!currentVoter.isAdmin) {

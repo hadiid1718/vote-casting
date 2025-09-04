@@ -1,12 +1,7 @@
 // Authentication redirect utilities
 export const redirectAfterLogin = (isAdmin, navigate) => {
-  if (isAdmin) {
-    // Admin goes to elections page to manage elections
-    navigate('/elections');
-  } else {
-    // Regular user goes to elections page to view and vote
-    navigate('/elections');
-  }
+  // Both admin and regular users go to blogs page after login
+  navigate('/blogs');
 };
 
 export const redirectAfterLogout = (navigate) => {
@@ -19,5 +14,5 @@ export const getDefaultRoute = (isAuthenticated, isAdmin) => {
     return '/';
   }
   
-  return '/elections';
+  return '/blogs';
 };

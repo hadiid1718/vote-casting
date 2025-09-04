@@ -53,6 +53,7 @@ const Navbar = () => {
             {currentVoter.token ? (
               // Show authenticated menu
               <>
+                <NavLink to="/blogs" onClick={closeMenu}>Blogs</NavLink>
                 <NavLink to="/elections" onClick={closeMenu}>Elections</NavLink>
                 <NavLink to="/results" onClick={closeMenu}>Results</NavLink>
                 <NavLink to="/logout" onClick={closeMenu}>Logout</NavLink>
@@ -60,7 +61,8 @@ const Navbar = () => {
             ) : (
               // Show unauthenticated menu
               <>
-                <NavLink to="/" onClick={closeMenu}>Login</NavLink>
+                <NavLink to="/" onClick={closeMenu}>Blogs</NavLink>
+                <NavLink to="/login" onClick={closeMenu}>Login</NavLink>
                 <NavLink to="/register" onClick={closeMenu}>Register</NavLink>
               </>
             )}
