@@ -18,6 +18,54 @@
   word-wrap: break-word;
 }
 
+/* Tablet responsive images */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .blog-content img,
+  .blog-text img {
+    max-width: 600px !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 20px 0 !important;
+    border-radius: 10px !important;
+    display: block !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12) !important;
+  }
+  
+  .blog-content,
+  .blog-text {
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    padding: 0 1rem;
+  }
+  
+  /* Enhanced image galleries for tablets */
+  .blog-content .images-grid,
+  .blog-text .images-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.25rem;
+    margin: 1.5rem 0;
+  }
+  
+  /* Better spacing for tablet reading */
+  .blog-content p,
+  .blog-text p {
+    margin-bottom: 1.25rem;
+    line-height: 1.7;
+  }
+  
+  .blog-content h1,
+  .blog-content h2,
+  .blog-content h3,
+  .blog-content h4,
+  .blog-text h1,
+  .blog-text h2,
+  .blog-text h3,
+  .blog-text h4 {
+    margin: 2rem 0 1.25rem;
+  }
+}
+
 /* Mobile responsive images */
 @media (max-width: 768px) {
   .blog-content img,

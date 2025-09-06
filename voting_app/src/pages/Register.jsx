@@ -1,7 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
+import { voterActions } from "../store/vote-slice";
 import { registerVoter } from "../store/thunks";
+import { toast } from "react-toastify";
 
 const Register = () => {
   const [userData, setUserData] = useState({
@@ -10,24 +12,48 @@ const Register = () => {
     password: "",
     password2: "",
   });
+  const [emailValid, setEmailValid] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { loading, error } = useSelector(state => state.vote);
+  
+  // Clear any previous errors when component mounts
+  useEffect(() => {
+    dispatch(voterActions.clearError());
+  }, [dispatch]);
 
   const changeInputHandler = (e) => {
+    const { name, value } = e.target;
     setUserData((prevState) => {
-      return { ...prevState, [e.target.name]: e.target.value };
+      return { ...prevState, [name]: value };
     });
-
-
+    
+    // Real-time email validation
+    if (name === 'email') {
+      const isValid = value.toLowerCase() === 'iitadmin@gmail.com' || value === '';
+      setEmailValid(isValid);
+    }
   };
   const registerUser = async(e) => {
-    e.preventDefault()
+    e.preventDefault();
+    
+    // Clear any previous errors
+    dispatch(voterActions.clearError());
+    
+    // Validate admin email
+    if (userData.email.toLowerCase() !== 'iitadmin@gmail.com') {
+      toast.error('Admin registration is only allowed for the official admin email: iitadmin@gmail.com');
+      return;
+    }
+    
     try {
-       await dispatch(registerVoter(userData)).unwrap()
-       navigate("/")
+       await dispatch(registerVoter(userData)).unwrap();
+       toast.success('Admin registration successful! Please log in.');
+       navigate("/login");
     } catch (err) {
-      console.error('Registration failed:', err)
+      console.error('Registration failed:', err);
+      const errorMessage = err.message || err.error || 'Registration failed. Please try again.';
+      toast.error(errorMessage);
     }
   }
  
@@ -35,43 +61,61 @@ const Register = () => {
     <>
       <section className="register">
         <div className="container register__container">
-          <h2>Sign Up</h2>
+          <h2>Admin Registration</h2>
+          
           <form action="" onSubmit={registerUser}>
-            {error && <p className="form__error-message">{error}</p>}
+            
             <input
               type="text"
               name="fullName"
-              placeholder="Full Name"
+              placeholder="Administrator Full Name *"
+              value={userData.fullName}
               onChange={changeInputHandler}
-              autoComplete="true"
+              autoComplete="name"
               autoFocus
+              required
             />
+            
             <input
               type="email"
               name="email"
-              placeholder="Email Address"
+              placeholder="Enter Official Admin Email *"
+              value={userData.email}
               onChange={changeInputHandler}
-              autoComplete="true"
+              autoComplete="email"
+              required
+              style={{
+                borderColor: !emailValid ? '#dc3545' : undefined,
+                backgroundColor: !emailValid ? '#fdf2f2' : undefined
+              }}
             />
+  
             <input
               type="password"
               name="password"
-              placeholder="Password"
+              placeholder="Password *"
+              value={userData.password}
               onChange={changeInputHandler}
-              autoComplete="true"
+              autoComplete="new-password"
+              required
             />
+            
             <input
               type="password"
               name="password2"
-              placeholder="Confirm Passowrd"
+              placeholder="Confirm Password *"
+              value={userData.password2}
               onChange={changeInputHandler}
-              autoComplete="true"
+              autoComplete="new-password"
+              required
             />
+            
             <p>
-              Already have an account? <Link to="/">Sign in</Link>
+              Already have an account? <Link to="/login">Sign in</Link>
             </p>
-            <button type="submit" className="btn primary">
-              Register
+            
+            <button type="submit" className="btn primary" disabled={loading || !emailValid}>
+              {loading ? 'Creating Admin Account...' : 'Create Administrator Account'}
             </button>
           </form>
         </div>

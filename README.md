@@ -20,6 +20,16 @@ A comprehensive web-based voting platform for conducting secure, time-controlled
 - **Secure session management** with localStorage persistence
 - **Protected routes** for authenticated users only
 
+### 📝 Blog & Content Management System
+- **Rich blog creation** with HTML content support and image embedding
+- **Featured image uploads** with Cloudinary integration (max 2MB)
+- **Content image insertion** - Upload and embed multiple images in blog content
+- **Tag-based categorization** with dynamic filtering
+- **Winner announcement blogs** - Special blog type for election results
+- **Blog search functionality** with title and content search
+- **Public blog viewing** - No authentication required for reading
+- **Admin-only content management** - Only admins can create, edit, and delete blogs
+
 ### ⏰ Advanced Election Scheduling
 - **Flexible timing controls** - Set exact start times and durations (1-24 hours)
 - **Default 4-hour voting window** with customizable duration
@@ -152,6 +162,15 @@ Frontend runs on `http://localhost:5173`
    - View progress bars showing vote distribution
    - See total votes cast for each election
 
+5. **Reading Blogs & Announcements**
+   - Browse latest blogs on the homepage (public access)
+   - Search blogs by title or content
+   - Filter blogs by tags
+   - Read election results and winner announcements
+   - Like blogs (requires login)
+   - Comment on blogs and participate in discussions
+   - View blog statistics (likes, views, comments)
+
 ### For Administrators
 
 1. **Election Management**
@@ -176,6 +195,15 @@ Frontend runs on `http://localhost:5173`
    - Configure voting duration (1-24 hours)
    - Monitor countdown timers and status changes
    - Automatic result announcement after voting ends
+
+5. **Blog & Content Management**
+   - Create rich blogs with HTML content and image embedding
+   - Upload featured images and embed content images via Cloudinary
+   - Organize content with tags for easy filtering
+   - Create special winner announcement blogs linked to elections
+   - Edit and delete existing blog posts
+   - Monitor blog engagement (views, likes, comments)
+   - Moderate comments and manage user interactions
 
 ## 🔗 API Documentation
 
@@ -211,12 +239,32 @@ GET /api/elections/:id/candidates  # Get election candidates
 GET /api/elections/:id/voters      # Get election voters
 ```
 
+### Blog Management Endpoints
+```
+# Blog CRUD
+POST   /api/blogs                     # Create blog (Admin only)
+GET    /api/blogs                     # Get all blogs (Public)
+GET    /api/blogs/:id                 # Get single blog (Public)
+PATCH  /api/blogs/:id                 # Update blog (Admin only)
+DELETE /api/blogs/:id                 # Delete blog (Admin only)
+POST   /api/blogs/upload-images       # Upload content images (Admin only)
+PATCH  /api/blogs/:id/like            # Toggle blog like (Authenticated)
+
+# Comment System
+GET    /api/blogs/:id/comments        # Get blog comments (Public)
+POST   /api/blogs/:id/comments        # Create comment (Authenticated)
+PATCH  /api/comments/:commentId       # Update comment (Author only)
+DELETE /api/comments/:commentId       # Delete comment (Author/Admin)
+PATCH  /api/comments/:commentId/like  # Toggle comment like (Authenticated)
+```
+
 ## 📁 Project Structure
 
 ```
 voting/
 ├── server/                    # Backend application
 │   ├── controllers/           # Request handlers
+│   │   ├── blogController.js         # NEW: Blog management
 │   │   ├── candidatesController.js
 │   │   ├── electionController.js
 │   │   └── voterController.js
@@ -225,10 +273,14 @@ voting/
 │   │   ├── errorMiddleware.js
 │   │   └── voteTimeMiddleware.js
 │   ├── models/               # Database schemas
+│   │   ├── blogModel.js             # NEW: Blog schema
+│   │   ├── commentModel.js          # NEW: Comment system
 │   │   ├── candidateModel.js
 │   │   ├── electionModel.js
 │   │   ├── errorModel.js
 │   │   └── voterModel.js
+│   ├── uploads/               # NEW: Local file storage
+│   │   └── blog_featured/           # Blog featured images
 │   ├── routes/               # API routes
 │   │   └── Routes.js
 │   ├── utils/                # Utilities
@@ -243,20 +295,27 @@ voting/
 │   │   │   ├── AddCandidateModal.jsx
 │   │   │   ├── AddElectionModal.jsx
 │   │   │   ├── AdminRoute.jsx
+│   │   │   ├── BlogCard.jsx             # NEW: Blog card component
+│   │   │   ├── BlogContent.css         # NEW: Blog content styling
 │   │   │   ├── Candidate.jsx
 │   │   │   ├── CandidateRating.jsx
+│   │   │   ├── CommentModal.jsx        # NEW: Blog comments modal
+│   │   │   ├── CommentSection.jsx      # NEW: Blog comment system
 │   │   │   ├── ConfirmVote.jsx
 │   │   │   ├── Election.jsx
 │   │   │   ├── ElectionCandidate.jsx
-│   │   │   ├── ElectionStatus.jsx    # NEW: Status display
+│   │   │   ├── ElectionStatus.jsx      # NEW: Status display
 │   │   │   ├── LogoutButton.jsx
 │   │   │   ├── Navbar.jsx
 │   │   │   ├── ProtectedRoute.jsx
 │   │   │   ├── ResultElection.jsx
 │   │   │   └── UpdateElectionModal.jsx
 │   │   ├── pages/            # Page components
+│   │   │   ├── BlogDetail.jsx          # NEW: Blog detail view
+│   │   │   ├── BlogList.jsx            # NEW: Blog listing page
 │   │   │   ├── Candidates.jsx
 │   │   │   ├── Congrates.jsx
+│   │   │   ├── CreateBlog.jsx          # NEW: Blog creation form
 │   │   │   ├── ElectionDetail.jsx
 │   │   │   ├── Elections.jsx
 │   │   │   ├── ErrorPage.jsx
@@ -266,11 +325,13 @@ voting/
 │   │   │   └── Result.jsx
 │   │   ├── services/         # API services
 │   │   │   ├── api.js
+│   │   │   ├── blogService.js          # NEW: Blog API service
 │   │   │   ├── candidateService.js
 │   │   │   ├── electionService.js
 │   │   │   ├── index.js
 │   │   │   └── voterService.js
 │   │   ├── store/            # Redux store
+│   │   │   ├── blog-slice.js           # NEW: Blog state management
 │   │   │   ├── store.js
 │   │   │   ├── thunks.js
 │   │   │   ├── ui-slice.js
@@ -576,14 +637,18 @@ CLOUDINARY_API_SECRET=your_api_secret
 
 ## 📊 System Overview
 
-This voting system provides a complete solution for conducting secure, time-controlled elections with:
+This comprehensive voting and content management system provides a complete solution for conducting secure, time-controlled elections with community engagement features:
 
 - **🔐 Secure Authentication** - JWT-based with role management
 - **⏰ Smart Scheduling** - 4-hour voting windows with admin control
 - **🗳️ Reliable Voting** - One vote per person with time enforcement  
 - **📊 Live Results** - Real-time progress bars and vote counts
+- **📝 Blog & CMS** - Rich content creation with image embedding and comments
+- **💬 Interactive Engagement** - Likes, comments, and social sharing features
+- **🏆 Winner Announcements** - Special blog posts for election results
+- **🔍 Content Discovery** - Search and tag-based filtering system
 - **📱 Responsive UI** - Works perfectly on desktop and mobile
-- **🛡️ Admin Controls** - Complete election and candidate management
+- **🛡️ Admin Controls** - Complete election, candidate, and content management
 
 Built with modern web technologies and best practices for security, performance, and user experience.
 

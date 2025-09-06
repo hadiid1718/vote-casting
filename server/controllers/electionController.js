@@ -2,7 +2,7 @@
 
 const HttpError = require("../models/errorModel");
 const { v4: uuid } = require("uuid");
-const cloudinary = require("../utils/cloudinary");
+const { uploadToCloudinary } = require("../utils/cloudinary");
 const path = require("path");
 const ElectionModel = require("../models/electionModel");
 const CandidatesModel = require("../models/candidateModel");
@@ -17,6 +17,13 @@ const mongoose = require("mongoose");
 //PROTECTED (Onnly Admin)
 const addElections = async (req, res, next) => {
   try {
+    console.log('addElections called with:', {
+      title: req?.body?.title,
+      description: req?.body?.description,
+      files: req?.files ? Object.keys(req.files) : 'no files',
+      user: req?.user ? { id: req.user.id, isAdmin: req.user.isAdmin } : 'no user'
+    });
+    
     // only admin can access
     if(!req.user.isAdmin) {
       return next(new HttpError("Only admin can change it.", 403))
@@ -44,10 +51,21 @@ const addElections = async (req, res, next) => {
     }
     
     endTime = new Date(startTime.getTime() + votingDuration * 60 * 60 * 1000);
+    
+    console.log('Checking for thumbnail file...');
+    console.log('Request files:', req?.files);
+    console.log('Request files keys:', req?.files ? Object.keys(req.files) : 'no files');
+    
     if (!req?.files?.thumbnail) {
-      return next(new HttpError("Please choose a thumbnail", 422));
+      console.log('No thumbnail file found in request');
+      return next(new HttpError("Please choose a thumbnail image. Make sure to select an image file before creating the election.", 422));
     }
     const { thumbnail } = req.files;
+    console.log('Thumbnail file details:', {
+      name: thumbnail.name,
+      size: thumbnail.size,
+      mimetype: thumbnail.mimetype
+    });
 
     // set the size of thumbnail
     if (thumbnail.size > 1000000) {
@@ -74,26 +92,16 @@ const addElections = async (req, res, next) => {
       });
     };
     
-    // Upload directly to cloudinary using signed upload
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        {
-          resource_type: "image",
-          use_filename: true,
-          unique_filename: true,
-          folder: "elections"
-        },
-        (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      ).end(thumbnail.data);
+    // Upload to cloudinary using our helper function
+    console.log('Starting upload to cloudinary...');
+    const result = await uploadToCloudinary(thumbnail, "elections");
+    console.log('Upload completed, result:', {
+      secure_url: result.secure_url,
+      public_id: result.public_id
     });
     
     if (!result.secure_url) {
+      console.log('Upload failed - no secure_url in result');
       return next(new HttpError("Couldn't upload image to cloudinary", 422));
     }
     
@@ -208,24 +216,8 @@ const updateElections = async (req, res, next) => {
         });
       };
       
-      // Upload directly to cloudinary using buffer to avoid timestamp issues
-      const result = await new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-          {
-            resource_type: "image",
-            use_filename: true,
-            unique_filename: true,
-            folder: "elections"
-          },
-          (error, result) => {
-            if (error) {
-              reject(error);
-            } else {
-              resolve(result);
-            }
-          }
-        ).end(thumbnail.data);
-      });
+      // Upload to cloudinary using our helper function
+      const result = await uploadToCloudinary(thumbnail, "elections");
       
       if (!result.secure_url) {
         return next(new HttpError("couldn't upload on cloudinary try again!", 422));

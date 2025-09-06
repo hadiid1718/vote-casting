@@ -1,7 +1,7 @@
 
 const HttpError = require("../models/errorModel");
 const { v4: uuid } = require("uuid");
-const cloudinary = require("../utils/cloudinary");
+const { uploadToCloudinary } = require("../utils/cloudinary");
 const path = require("path");
 const ElectionModel = require("../models/electionModel");
 const CandidatesModel = require("../models/candidateModel");
@@ -18,6 +18,14 @@ const { checkVotingTime, checkVoterEligibility } = require("../middleware/voteTi
 //PROTECTED (Only Admin)
 const addCandidate = async(req,res, next) => {
   try {
+    console.log('addCandidate called with:', {
+      fullName: req?.body?.fullName,
+      motto: req?.body?.motto,
+      currentElection: req?.body?.currentElection,
+      files: req?.files ? Object.keys(req.files) : 'no files',
+      user: req?.user ? { id: req.user.id, isAdmin: req.user.isAdmin } : 'no user'
+    });
+    
     // only admin can access
     if(!req.user.isAdmin) {
       return next(new HttpError("Only admin can change it.", 403))
@@ -26,10 +34,19 @@ const addCandidate = async(req,res, next) => {
     if (!fullName || !motto) {
       return next(new HttpError("Fill all the fields.", 422));
     }
+    
+    console.log('Checking for image file...');
+    console.log('Request files:', req?.files);
     if (!req?.files?.image) {
-      return next(new HttpError("Please choose an image", 422));
+      console.log('No image file found in request');
+      return next(new HttpError("Please choose a candidate image. Make sure to select an image file before adding the candidate.", 422));
     }
     const { image } = req.files;
+    console.log('Candidate image file details:', {
+      name: image.name,
+      size: image.size,
+      mimetype: image.mimetype
+    });
 
     // set the size of thumbnail
     if (image.size > 1000000) {
@@ -55,26 +72,16 @@ const addCandidate = async(req,res, next) => {
       });
     };
     
-    // Upload directly to cloudinary using buffer to avoid timestamp issues
-    const result = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        {
-          resource_type: "image",
-          use_filename: true,
-          unique_filename: true,
-          folder: "candidates"
-        },
-        (error, result) => {
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      ).end(image.data);
+    // Upload to cloudinary using our helper function
+    console.log('Starting upload to cloudinary for candidate image...');
+    const result = await uploadToCloudinary(image, "candidates");
+    console.log('Upload completed, result:', {
+      secure_url: result.secure_url,
+      public_id: result.public_id
     });
     
     if (!result.secure_url) {
+      console.log('Upload failed - no secure_url in result');
       return next(new HttpError("Couldn't upload image to cloudinary", 422));
     }
     
@@ -105,7 +112,8 @@ const addCandidate = async(req,res, next) => {
     
     res.status(201).json(newCandidate);
   } catch (error) {
-    return next(new HttpError(error));
+    console.error('Candidate creation error:', error);
+    return next(new HttpError(error.message || "Candidate creation failed", 500));
   }
  }
 

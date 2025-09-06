@@ -197,6 +197,19 @@ export const toggleCommentLike = createAsyncThunk(
   }
 );
 
+// Toggle comment pin (admin only)
+export const toggleCommentPin = createAsyncThunk(
+  'blog/toggleCommentPin',
+  async (commentId, { rejectWithValue }) => {
+    try {
+      const response = await blogService.toggleCommentPin(commentId);
+      return { commentId, ...response };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to toggle comment pin');
+    }
+  }
+);
+
 // Blog slice
 const blogSlice = createSlice({
   name: 'blog',
@@ -342,16 +355,29 @@ const blogSlice = createSlice({
       })
       .addCase(fetchBlogComments.fulfilled, (state, action) => {
         state.commentsLoading = false;
-        state.comments = action.payload.comments;
-        state.commentsPagination = {
-          currentPage: action.payload.currentPage,
-          totalPages: action.payload.totalPages,
-          total: action.payload.total
-        };
+        if (action.payload) {
+          state.comments = action.payload.comments || [];
+          state.commentsPagination = {
+            currentPage: action.payload.currentPage || 1,
+            totalPages: action.payload.totalPages || 1,
+            total: action.payload.total || 0
+          };
+        } else {
+          // Handle case where payload is null (silent failure)
+          state.comments = [];
+          state.commentsPagination = {
+            currentPage: 1,
+            totalPages: 1,
+            total: 0
+          };
+        }
       })
       .addCase(fetchBlogComments.rejected, (state, action) => {
         state.commentsLoading = false;
-        state.error = action.payload;
+        // Only set error if it's not a silent failure
+        if (action.payload !== null) {
+          state.error = action.payload;
+        }
       })
 
       // Create comment
@@ -386,6 +412,21 @@ const blogSlice = createSlice({
         const commentIndex = state.comments.findIndex(comment => comment._id === commentId);
         if (commentIndex !== -1) {
           state.comments[commentIndex].likesCount = likesCount;
+        }
+      })
+
+      // Toggle comment pin
+      .addCase(toggleCommentPin.fulfilled, (state, action) => {
+        const { comment: updatedComment } = action.payload;
+        const commentIndex = state.comments.findIndex(comment => comment._id === updatedComment._id);
+        if (commentIndex !== -1) {
+          state.comments[commentIndex] = updatedComment;
+          // Re-sort comments to move pinned comments to the top
+          state.comments.sort((a, b) => {
+            if (a.isPinned && !b.isPinned) return -1;
+            if (!a.isPinned && b.isPinned) return 1;
+            return new Date(b.createdAt) - new Date(a.createdAt);
+          });
         }
       });
   }
