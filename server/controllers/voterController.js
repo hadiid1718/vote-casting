@@ -20,13 +20,9 @@ const registerVoter = async (req, res, next) => {
     const newEmail = email.toLowerCase();
     
     // Restrict admin registration to only the official admin email
-<<<<<<< HEAD
     if (newEmail !== process.env.ADMIN_EMAIL) {
       return next(new HttpError("Admin registration is only allowed for the official admin email", 422));
-=======
-    if (newEmail !== 'iitadmin@gmail.com') {
-      return next(new HttpError("Admin registration is only allowed for the official admin email: iitadmin@gmail.com", 422));
->>>>>>> 714dba29d9907957121996e97a1cb5fefba54948
+
     }
     
     // check if email already exist
