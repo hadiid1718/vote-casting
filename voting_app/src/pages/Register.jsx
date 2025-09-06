@@ -12,6 +12,7 @@ const Register = () => {
     password: "",
     password2: "",
   });
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'castifyadmin@gmail.com';
   const [emailValid, setEmailValid] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -29,8 +30,9 @@ const Register = () => {
     });
     
     // Real-time email validation
-    if (name === 'email') {
-      const isValid = value.toLowerCase() === 'iitadmin@gmail.com' || value === '';
+    if (name === 'email') { 
+      const isValid = value.toLowerCase() === adminEmail.toLowerCase() || value === '';
+
       setEmailValid(isValid);
     }
   };
@@ -41,8 +43,10 @@ const Register = () => {
     dispatch(voterActions.clearError());
     
     // Validate admin email
-    if (userData.email.toLowerCase() !== 'iitadmin@gmail.com') {
-      toast.error('Admin registration is only allowed for the official admin email: iitadmin@gmail.com');
+
+    if (userData.email.toLowerCase() !== adminEmail.toLowerCase()) {
+      toast.error(`Admin registration is only allowed for the official admin email: ${adminEmail}`);
+
       return;
     }
     
@@ -79,7 +83,8 @@ const Register = () => {
             <input
               type="email"
               name="email"
-              placeholder="Enter Official Admin Email *"
+
+              placeholder='Enter official admin email '
               value={userData.email}
               onChange={changeInputHandler}
               autoComplete="email"
@@ -89,7 +94,7 @@ const Register = () => {
                 backgroundColor: !emailValid ? '#fdf2f2' : undefined
               }}
             />
-  
+
             <input
               type="password"
               name="password"
