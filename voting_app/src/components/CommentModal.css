@@ -116,6 +116,50 @@
   color: #e5e5e5;
 }
 
+/* Tablet responsiveness */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .comment-modal-overlay {
+    padding: 1.5rem;
+  }
+  
+  .comment-modal {
+    max-width: 90%;
+    max-height: 85vh;
+    border-radius: 12px;
+  }
+  
+  .comment-modal-header {
+    padding: 1.75rem;
+  }
+  
+  .comment-modal-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+  }
+  
+  .comment-modal-close {
+    padding: 0.75rem;
+  }
+  
+  .comment-modal-close .icon {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .comment-modal-body {
+    padding: 1.75rem;
+  }
+  
+  /* Better touch targets for tablets */
+  .comment-modal-close:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark .comment-modal-close:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
   .comment-modal-overlay {

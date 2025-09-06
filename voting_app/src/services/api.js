@@ -57,7 +57,7 @@ api.interceptors.request.use(
     const publicRoutes = ['/blogs', '/test'];
     const isPublicRoute = publicRoutes.some(route => 
       config.url.includes(route) && config.method === 'get'
-    );
+    ) || (config.url.includes('/comments') && config.method === 'get'); // Comment fetching is public
     
     // Check if we need to refresh the token for protected routes
     if (token && !isPublicRoute && shouldRefreshToken()) {
@@ -110,7 +110,7 @@ api.interceptors.response.use(
       const isPublicRoute = publicRoutes.some(route => 
         error.config?.url?.includes(route) && 
         error.config?.method === 'get'
-      );
+      ) || (error.config?.url?.includes('/comments') && error.config?.method === 'get');
       
       if (!isPublicRoute) {
         // Token expired or invalid on protected route

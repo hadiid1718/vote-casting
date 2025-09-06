@@ -7,20 +7,37 @@ import { HiOutlineBars3 } from "react-icons/hi2";
 import { AiOutlineClose } from "react-icons/ai";
 
 const Navbar = () => {
-  const [ showNav, setShowNav] = useState(window.innerWidth < 600 ? false:true)
+  const [ showNav, setShowNav] = useState(window.innerWidth < 768 ? false:true)
   const [ darkTheme, setDarkTheme] = useState(localStorage.getItem('voting-app-theme') || "")
   const { currentVoter } = useSelector(state => state.vote)
+  
   // function to open & close menu
   const handleToggling = () => {
     setShowNav(!showNav)
   }
+  
   const closeMenu = ()=> {
-    if(window.innerWidth < 600) {
+    if(window.innerWidth < 768) {
       setShowNav(false)
     } else {
       setShowNav(true)
     }
   }
+  
+  // Handle window resize to properly show/hide menu
+  const handleResize = () => {
+    if(window.innerWidth >= 768) {
+      setShowNav(true)
+    } else {
+      setShowNav(false)
+    }
+  }
+  
+  // Add resize listener
+  React.useEffect(() => {
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // function to toggle/change theme
 
@@ -35,7 +52,14 @@ const Navbar = () => {
 
   }
   useEffect(()=> {
-    document.body.className = localStorage.getItem('voting-app-theme')
+    const theme = localStorage.getItem('voting-app-theme')
+    document.body.className = theme
+    // Set data-theme attribute for CSS variables
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark')
+    } else {
+      document.documentElement.removeAttribute('data-theme')
+    }
   }, [darkTheme])
   return (
     <>
@@ -56,6 +80,9 @@ const Navbar = () => {
                 <NavLink to="/blogs" onClick={closeMenu}>Blogs</NavLink>
                 <NavLink to="/elections" onClick={closeMenu}>Elections</NavLink>
                 <NavLink to="/results" onClick={closeMenu}>Results</NavLink>
+                {currentVoter.isAdmin && (
+                  <NavLink to="/admin" onClick={closeMenu}>Admin Dashboard</NavLink>
+                )}
                 <NavLink to="/logout" onClick={closeMenu}>Logout</NavLink>
               </>
             ) : (

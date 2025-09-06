@@ -1,14 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { FiHeart, FiMessageCircle, FiEye, FiCalendar, FiUser } from 'react-icons/fi';
+import { FiHeart, FiMessageCircle, FiEye, FiCalendar, FiUser, FiEdit2, FiTrash2 } from 'react-icons/fi';
 import { useSelector, useDispatch } from 'react-redux';
-import { toggleBlogLike } from '../store/blog-slice';
+import { toggleBlogLike, deleteBlog } from '../store/blog-slice';
 import { toast } from 'react-toastify';
 
 const BlogCard = ({ blog }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { currentVoter: user } = useSelector(state => state.vote);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -43,7 +44,36 @@ const BlogCard = ({ blog }) => {
     }
   };
 
+  const handleDelete = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete this blog? This action cannot be undone.'
+    );
+
+    if (!confirmDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await dispatch(deleteBlog(blog._id)).unwrap();
+      toast.success('Blog deleted successfully');
+    } catch (error) {
+      toast.error(error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleEdit = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/blogs/${blog._id}/edit`);
+  };
+
   const isLiked = user && blog.likes && blog.likes.includes(user._id);
+  const canEdit = user && user.isAdmin;
+  const canDelete = user && user.isAdmin;
 
   return (
     <div className="blog-card">
@@ -126,6 +156,34 @@ const BlogCard = ({ blog }) => {
           </div>
         </div>
       </Link>
+      
+      {/* Admin Action Buttons */}
+      {(canEdit || canDelete) && (
+        <div className="blog-card-admin-actions">
+          {canEdit && (
+            <button 
+              className="admin-action-btn edit-btn"
+              onClick={handleEdit}
+              title="Edit blog"
+            >
+              <FiEdit2 className="icon" />
+              <span>Edit</span>
+            </button>
+          )}
+          
+          {canDelete && (
+            <button 
+              className="admin-action-btn delete-btn"
+              onClick={handleDelete}
+              disabled={isDeleting}
+              title={isDeleting ? 'Deleting...' : 'Delete blog'}
+            >
+              <FiTrash2 className="icon" />
+              <span>{isDeleting ? 'Deleting...' : 'Delete'}</span>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

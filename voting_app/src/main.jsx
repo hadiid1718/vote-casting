@@ -17,6 +17,8 @@ import Logout from "./pages/Logout"
 import BlogList from "./pages/BlogList"
 import BlogDetail from "./pages/BlogDetail"
 import CreateBlog from "./pages/CreateBlog"
+import StudentManagement from "./components/StudentManagement"
+import AdminDashboard from "./components/AdminDashboard"
 import ProtectedRoute from "./components/ProtectedRoute"
 import AdminRoute from "./components/AdminRoute"
 import store from './store/store.js'
@@ -76,6 +78,15 @@ const router  = createBrowserRouter([
     {
       path: 'blogs/:id',
       element: <BlogDetail/>
+    },
+    // Admin routes
+    {
+      path: 'admin',
+      element: <AdminRoute><AdminDashboard/></AdminRoute>
+    },
+    {
+      path: 'students',
+      element: <AdminRoute><StudentManagement/></AdminRoute>
     },
 
     ]

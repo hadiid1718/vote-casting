@@ -40,4 +40,41 @@ export const voterService = {
   logout: () => {
     localStorage.removeItem('token');
   },
+
+  // Admin student management services
+  addStudent: async (studentData) => {
+    try {
+      const response = await api.post('/voters/add-student', studentData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  getAllStudents: async () => {
+    try {
+      const response = await api.get('/voters/students');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  updateStudent: async (studentId, studentData) => {
+    try {
+      const response = await api.patch(`/voters/students/${studentId}`, studentData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
+
+  deleteStudent: async (studentId) => {
+    try {
+      const response = await api.delete(`/voters/students/${studentId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error.message;
+    }
+  },
 };

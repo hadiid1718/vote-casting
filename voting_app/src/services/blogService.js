@@ -201,6 +201,16 @@ export const blogService = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Pin/Unpin comment (admin only)
+  toggleCommentPin: async (commentId) => {
+    try {
+      const response = await api.patch(`/comments/${commentId}/pin`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   }
 };
 
