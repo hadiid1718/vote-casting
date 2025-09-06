@@ -12,7 +12,10 @@ const Register = () => {
     password: "",
     password2: "",
   });
+<<<<<<< HEAD
   const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'castifyadmin@gmail.com';
+=======
+>>>>>>> 714dba29d9907957121996e97a1cb5fefba54948
   const [emailValid, setEmailValid] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -31,7 +34,11 @@ const Register = () => {
     
     // Real-time email validation
     if (name === 'email') {
+<<<<<<< HEAD
       const isValid = value.toLowerCase() === adminEmail.toLowerCase() || value === '';
+=======
+      const isValid = value.toLowerCase() === 'iitadmin@gmail.com' || value === '';
+>>>>>>> 714dba29d9907957121996e97a1cb5fefba54948
       setEmailValid(isValid);
     }
   };
@@ -42,8 +49,13 @@ const Register = () => {
     dispatch(voterActions.clearError());
     
     // Validate admin email
+<<<<<<< HEAD
     if (userData.email.toLowerCase() !== adminEmail.toLowerCase()) {
       toast.error(`Admin registration is only allowed for the official admin email: ${adminEmail}`);
+=======
+    if (userData.email.toLowerCase() !== 'iitadmin@gmail.com') {
+      toast.error('Admin registration is only allowed for the official admin email: iitadmin@gmail.com');
+>>>>>>> 714dba29d9907957121996e97a1cb5fefba54948
       return;
     }
     
@@ -80,7 +92,11 @@ const Register = () => {
             <input
               type="email"
               name="email"
+<<<<<<< HEAD
               placeholder='Enter official admin email *'
+=======
+              placeholder="Enter Official Admin Email *"
+>>>>>>> 714dba29d9907957121996e97a1cb5fefba54948
               value={userData.email}
               onChange={changeInputHandler}
               autoComplete="email"
@@ -90,7 +106,10 @@ const Register = () => {
                 backgroundColor: !emailValid ? '#fdf2f2' : undefined
               }}
             />
+<<<<<<< HEAD
       
+=======
+>>>>>>> 714dba29d9907957121996e97a1cb5fefba54948
   
             <input
               type="password"
