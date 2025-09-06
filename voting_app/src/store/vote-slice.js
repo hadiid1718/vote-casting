@@ -16,6 +16,10 @@ import {
   fetchCandidate,
   removeCandidate,
   voteForCandidate,
+  addStudent,
+  fetchAllStudents,
+  updateStudent,
+  deleteStudent,
 } from './thunks';
 
 const currentVoter = { id: "", token: "", isAdmin: false, votedElection: [] };
@@ -29,8 +33,10 @@ const initialState = {
   elections: [],
   candidates: [],
   voters: [],
+  students: [],
   currentElection: null,
   loading: false,
+  studentsLoading: false, // Separate loading state for students
   error: null,
 };
 
@@ -63,6 +69,8 @@ const voterSlice = createSlice({
       state.voters = [];
       state.currentElection = null;
       state.error = null;
+      // NOTE: We deliberately DO NOT clear students array to preserve admin data
+      // Students will be re-fetched when admin logs back in
       // Clear all authentication data
       localStorage.removeItem('token');
       localStorage.removeItem('refreshToken');
@@ -110,6 +118,9 @@ const voterSlice = createSlice({
         const expiryTime = Date.now() + (7 * 24 * 60 * 60 * 1000);
         localStorage.setItem('tokenExpiry', expiryTime.toString());
         localStorage.setItem('currentUser', JSON.stringify(userData));
+        
+        // Clear error state on successful login
+        state.error = null;
       })
       .addCase(loginVoter.rejected, (state, action) => {
         state.loading = false;
@@ -317,6 +328,71 @@ const voterSlice = createSlice({
         }
       })
       .addCase(startVoting.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Add Student
+      .addCase(addStudent.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addStudent.fulfilled, (state, action) => {
+        state.loading = false;
+        state.students.push(action.payload.student);
+        state.error = null;
+      })
+      .addCase(addStudent.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch All Students
+      .addCase(fetchAllStudents.pending, (state) => {
+        state.studentsLoading = true;
+        state.error = null;
+      })
+      .addCase(fetchAllStudents.fulfilled, (state, action) => {
+        state.studentsLoading = false;
+        state.students = action.payload;
+        state.error = null; // Clear any previous errors
+      })
+      .addCase(fetchAllStudents.rejected, (state, action) => {
+        state.studentsLoading = false;
+        // Only set error for actual API failures, not auth issues
+        // Preserve existing students data if it's just an auth token issue
+        if (action.payload?.status !== 401) {
+          state.error = action.payload;
+        }
+        // For auth failures (401), we preserve existing student data
+        // and let the auth system handle the redirect
+      })
+      // Update Student
+      .addCase(updateStudent.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateStudent.fulfilled, (state, action) => {
+        state.loading = false;
+        const index = state.students.findIndex(s => s._id === action.payload.student._id);
+        if (index !== -1) {
+          state.students[index] = action.payload.student;
+        }
+        state.error = null;
+      })
+      .addCase(updateStudent.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Delete Student
+      .addCase(deleteStudent.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteStudent.fulfilled, (state, action) => {
+        state.loading = false;
+        state.students = state.students.filter(s => s._id !== action.payload);
+        state.error = null;
+      })
+      .addCase(deleteStudent.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

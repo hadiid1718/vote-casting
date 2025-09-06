@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
-import { FiHeart, FiEdit2, FiTrash2, FiSend, FiUser } from 'react-icons/fi';
+import { FiHeart, FiEdit2, FiTrash2, FiSend, FiUser, FiMapPin } from 'react-icons/fi';
 import { 
   fetchBlogComments, 
   createComment, 
   updateComment, 
   deleteComment, 
-  toggleCommentLike 
+  toggleCommentLike,
+  toggleCommentPin
 } from '../store/blog-slice';
 import { toast } from 'react-toastify';
 
-const CommentItem = ({ comment, blogId, currentUser, onEdit, onDelete, onLike }) => {
+const CommentItem = ({ comment, blogId, currentUser, onEdit, onDelete, onLike, onPin }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.content);
 
@@ -59,18 +60,31 @@ const CommentItem = ({ comment, blogId, currentUser, onEdit, onDelete, onLike })
   };
 
   const isLiked = currentUser && comment.likes && comment.likes.includes(currentUser._id);
-  const canModify = currentUser && (comment.author._id === currentUser._id || currentUser.isAdmin);
+  const canEdit = currentUser && comment.author._id === currentUser._id; // Only comment author can edit
+  const canDelete = currentUser && (comment.author._id === currentUser._id || currentUser.isAdmin); // Author or admin can delete
+  const canPin = currentUser && (currentUser.isAdmin || comment.author._id === currentUser._id);
 
   return (
-    <div className="comment-item">
+    <div className={`comment-item ${comment.isPinned ? 'pinned-comment' : ''}`}>
+      {comment.isPinned && (
+        <div className="pinned-badge">
+          <FiMapPin className="icon" />
+          <span>Pinned</span>
+          {comment.pinnedBy && (
+            <span className="pinned-by">
+              by {comment.pinnedBy?.fullName || 'Unknown User'}
+              {comment.pinnedBy.isAdmin && (
+                <span className="admin-badge-small"> (Admin)</span>
+              )}
+            </span>
+          )}
+        </div>
+      )}
       <div className="comment-header">
         <div className="comment-author">
           <FiUser className="icon" />
           <span className="author-name">
-            {comment.author ? 
-              `${comment.author.firstName || ''} ${comment.author.lastName || ''}`.trim() : 
-              'Unknown User'
-            }
+            {comment.author?.fullName || 'Unknown User'}
             {comment.author?.isAdmin && (
               <span className="admin-badge">Admin</span>
             )}
@@ -125,8 +139,8 @@ const CommentItem = ({ comment, blogId, currentUser, onEdit, onDelete, onLike })
           <span>{comment.likesCount || 0}</span>
         </button>
 
-        {canModify && (
-          <div className="comment-modify-actions">
+        <div className="comment-modify-actions">
+          {canEdit && (
             <button 
               className="action-btn edit-btn"
               onClick={() => setIsEditing(true)}
@@ -134,6 +148,9 @@ const CommentItem = ({ comment, blogId, currentUser, onEdit, onDelete, onLike })
             >
               <FiEdit2 className="icon" />
             </button>
+          )}
+          
+          {canDelete && (
             <button 
               className="action-btn delete-btn"
               onClick={handleDelete}
@@ -141,7 +158,18 @@ const CommentItem = ({ comment, blogId, currentUser, onEdit, onDelete, onLike })
             >
               <FiTrash2 className="icon" />
             </button>
-          </div>
+          )}
+        </div>
+
+        {canPin && (
+          <button 
+            className={`action-btn pin-btn ${comment.isPinned ? 'pinned' : ''}`}
+            onClick={() => onPin(comment._id)}
+            title={comment.isPinned ? 'Unpin comment' : 'Pin comment'}
+          >
+            <FiMapPin className="icon" />
+            <span>{comment.isPinned ? 'Unpin' : 'Pin'}</span>
+          </button>
         )}
       </div>
     </div>
@@ -214,6 +242,20 @@ const CommentSection = ({ blogId, isModal = false }) => {
     }
   };
 
+  const handlePinComment = async (commentId) => {
+    if (!user || !user.token) {
+      toast.error('Please login to pin comments');
+      return;
+    }
+
+    try {
+      const result = await dispatch(toggleCommentPin(commentId)).unwrap();
+      toast.success(result.message);
+    } catch (error) {
+      toast.error(error);
+    }
+  };
+
   const loadMoreComments = () => {
     if (commentsPagination.currentPage < commentsPagination.totalPages) {
       dispatch(fetchBlogComments({ 
@@ -282,6 +324,7 @@ const CommentSection = ({ blogId, isModal = false }) => {
                 onEdit={handleEditComment}
                 onDelete={handleDeleteComment}
                 onLike={handleLikeComment}
+                onPin={handlePinComment}
               />
             ))}
 

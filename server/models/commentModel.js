@@ -35,6 +35,17 @@ const commentSchema = new Schema({
     },
     editedAt: {
         type: Date
+    },
+    isPinned: {
+        type: Boolean,
+        default: false
+    },
+    pinnedAt: {
+        type: Date
+    },
+    pinnedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'Voter'
     }
 }, {
     timestamps: true

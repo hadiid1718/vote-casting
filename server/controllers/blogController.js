@@ -85,7 +85,7 @@ const createBlog = async (req, res, next) => {
         
         console.log('Populating blog data...');
         const populatedBlog = await Blog.findById(savedBlog._id)
-            .populate('author', 'firstName lastName email isAdmin')
+            .populate('author', 'fullName email isAdmin')
             .populate('relatedElection', 'title');
         console.log('Blog populated successfully');
 
@@ -179,7 +179,7 @@ const getBlogs = async (req, res, next) => {
         }
 
         const blogs = await Blog.find(query)
-            .populate('author', 'firstName lastName email isAdmin')
+            .populate('author', 'fullName email isAdmin')
             .populate('relatedElection', 'title')
             .sort({ publishedAt: -1 })
             .limit(limit * 1)
@@ -204,7 +204,7 @@ const getBlog = async (req, res, next) => {
         const blogId = req.params.id;
         
         const blog = await Blog.findById(blogId)
-            .populate('author', 'firstName lastName email isAdmin')
+            .populate('author', 'fullName email isAdmin')
             .populate('relatedElection', 'title');
 
         if (!blog) {
@@ -275,7 +275,7 @@ const updateBlog = async (req, res, next) => {
                 relatedElection: relatedElection || blog.relatedElection
             },
             { new: true }
-        ).populate('author', 'firstName lastName email isAdmin')
+        ).populate('author', 'fullName email isAdmin')
          .populate('relatedElection', 'title');
 
         res.status(200).json(updatedBlog);
@@ -367,15 +367,9 @@ const getBlogComments = async (req, res, next) => {
         const { page = 1, limit = 10 } = req.query;
 
         const comments = await Comment.find({ blog: blogId, parentComment: null })
-            .populate('author', 'firstName lastName email isAdmin')
-            .populate({
-                path: 'replies',
-                populate: {
-                    path: 'author',
-                    select: 'firstName lastName email isAdmin'
-                }
-            })
-            .sort({ createdAt: -1 })
+            .populate('author', 'fullName email isAdmin')
+            .populate('pinnedBy', 'fullName email isAdmin')
+            .sort({ isPinned: -1, createdAt: -1 }) // Pinned comments first, then by creation date
             .limit(limit * 1)
             .skip((page - 1) * limit);
 
@@ -416,7 +410,7 @@ const createComment = async (req, res, next) => {
 
         const savedComment = await newComment.save();
         const populatedComment = await Comment.findById(savedComment._id)
-            .populate('author', 'firstName lastName email isAdmin');
+            .populate('author', 'fullName email isAdmin');
 
         res.status(201).json(populatedComment);
     } catch (error) {
@@ -451,7 +445,7 @@ const updateComment = async (req, res, next) => {
         await comment.save();
 
         const populatedComment = await Comment.findById(commentId)
-            .populate('author', 'firstName lastName email isAdmin');
+            .populate('author', 'fullName email isAdmin');
 
         res.status(200).json(populatedComment);
     } catch (error) {
@@ -521,6 +515,64 @@ const toggleCommentLike = async (req, res, next) => {
     }
 };
 
+// PIN/UNPIN COMMENT - User can pin own comments, Admin can pin any comment
+const toggleCommentPin = async (req, res, next) => {
+    try {
+        const commentId = req.params.commentId;
+        const userId = req.user.id;
+
+        // Get user info
+        const user = await Voter.findById(userId);
+        if (!user) {
+            return next(new HttpError("User not found.", 404));
+        }
+
+        const comment = await Comment.findById(commentId)
+            .populate('author', 'fullName email isAdmin');
+        
+        if (!comment) {
+            return next(new HttpError("Comment not found.", 404));
+        }
+
+        // Check permissions: Admin can pin any comment, user can pin only their own comments
+        const canPin = user.isAdmin || comment.author._id.toString() === userId;
+        if (!canPin) {
+            return next(new HttpError("You can only pin your own comments.", 403));
+        }
+
+        // Toggle pin status
+        let action = '';
+        if (comment.isPinned) {
+            // Unpin the comment
+            comment.isPinned = false;
+            comment.pinnedAt = undefined;
+            comment.pinnedBy = undefined;
+            action = 'unpinned';
+        } else {
+            // Pin the comment
+            comment.isPinned = true;
+            comment.pinnedAt = new Date();
+            comment.pinnedBy = userId;
+            action = 'pinned';
+        }
+
+        await comment.save();
+
+        // Populate the pinnedBy field if the comment is pinned
+        const populatedComment = await Comment.findById(commentId)
+            .populate('author', 'fullName email isAdmin')
+            .populate('pinnedBy', 'fullName email isAdmin');
+
+        res.status(200).json({
+            message: `Comment ${action} successfully.`,
+            comment: populatedComment,
+            isPinned: comment.isPinned
+        });
+    } catch (error) {
+        return next(new HttpError("Comment pin toggle failed.", 500));
+    }
+};
+
 module.exports = {
     createBlog,
     uploadBlogImages,
@@ -533,5 +585,6 @@ module.exports = {
     createComment,
     updateComment,
     deleteComment,
-    toggleCommentLike
+    toggleCommentLike,
+    toggleCommentPin
 };

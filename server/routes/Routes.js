@@ -1,15 +1,16 @@
 const { Router }  = require('express')
 
-const { registerVoter,loginVoter,getVoter,refreshToken } = require("../controllers/voterController")
+const { registerVoter,loginVoter,getVoter,refreshToken, addStudent, getAllStudents, updateStudent, deleteStudent } = require("../controllers/voterController")
 
 const { addElections, getElections, getElection, removeElections, updateElections, getElectionCandidates, getElectionVoter, updateElectionStatus, startVoting, resetElectionVotes } = require('../controllers/electionController')
 
 
 const { addCandidate, getCandidate, removeCandidate, voteCandidate } = require('../controllers/candidatesController')
 
-const { createBlog, uploadBlogImages, getBlogs, getBlog, updateBlog, deleteBlog, toggleBlogLike, getBlogComments, createComment, updateComment, deleteComment, toggleCommentLike } = require('../controllers/blogController')
+const { createBlog, uploadBlogImages, getBlogs, getBlog, updateBlog, deleteBlog, toggleBlogLike, getBlogComments, createComment, updateComment, deleteComment, toggleCommentLike, toggleCommentPin } = require('../controllers/blogController')
 
 const authMiddleware = require("../middleware/authMiddleware")
+const adminMiddleware = require("../middleware/adminMiddleware")
 
 
 const router = Router()
@@ -18,6 +19,12 @@ router.post('/voters/register', registerVoter)
 router.post('/voters/login', loginVoter)
 router.post('/voters/refresh-token', refreshToken)
 router.get('/voters/:id',authMiddleware, getVoter)
+
+// Admin student management routes
+router.post('/voters/add-student', authMiddleware, adminMiddleware, addStudent)
+router.get('/voters/students', authMiddleware, adminMiddleware, getAllStudents)
+router.patch('/voters/students/:id', authMiddleware, adminMiddleware, updateStudent)
+router.delete('/voters/students/:id', authMiddleware, adminMiddleware, deleteStudent)
 
 
 router.post('/elections', authMiddleware, addElections)
@@ -41,6 +48,25 @@ router.delete('/elections/:id/votes', authMiddleware, resetElectionVotes)
 // Test route
 router.get('/test', (req, res) => {
   res.json({ message: 'Server is working', timestamp: new Date() });
+});
+
+// Test cloudinary route
+router.get('/test-cloudinary', async (req, res) => {
+  try {
+    const { testCloudinaryConnection } = require('../utils/cloudinary');
+    const result = await testCloudinaryConnection();
+    res.json({
+      message: 'Cloudinary test completed',
+      cloudinary: result,
+      timestamp: new Date()
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Cloudinary test failed',
+      error: error.message,
+      timestamp: new Date()
+    });
+  }
 });
 
 // Test upload route
@@ -74,5 +100,6 @@ router.post('/blogs/:id/comments', authMiddleware, createComment)
 router.patch('/comments/:commentId', authMiddleware, updateComment)
 router.delete('/comments/:commentId', authMiddleware, deleteComment)
 router.patch('/comments/:commentId/like', authMiddleware, toggleCommentLike)
+router.patch('/comments/:commentId/pin', authMiddleware, toggleCommentPin)
 
 module.exports = router

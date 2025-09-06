@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const fs = require("fs");
 const { connect } = require("mongoose");
 require("dotenv").config("");
 const upload = require("express-fileupload")
@@ -9,6 +10,35 @@ const Routes = require("./routes/Routes");
 const { notFound, errorHandler} = require("./middleware/errorMiddleware")
 const { updateElectionStatusByTime } = require('./controllers/electionController');
 
+
+// Ensure necessary directories exist
+const ensureDirectoriesExist = () => {
+  const directories = [
+    path.join(__dirname, 'uploads'),
+    path.join(__dirname, 'uploads', 'elections'),
+    path.join(__dirname, 'temp')
+  ];
+  
+  directories.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log(`Created directory: ${dir}`);
+    }
+  });
+};
+
+// Create necessary directories
+ensureDirectoriesExist();
+
+// Log environment variables (safely)
+console.log('Environment check:', {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: process.env.PORT || 3000,
+  MONGO_DB_URL: process.env.MONGO_DB_URL ? 'set' : 'not set',
+  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'not set',
+  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? 'set' : 'not set',
+  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? 'set' : 'not set'
+});
 
 const app = express();
 app.use(express.json({ extended: true }));

@@ -3,18 +3,49 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuid } = require('uuid');
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
-})
+// Log cloudinary config attempt
+console.log('Configuring Cloudinary with:', {
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME ? 'set' : 'not set',
+  api_key: process.env.CLOUDINARY_API_KEY ? 'set' : 'not set', 
+  api_secret: process.env.CLOUDINARY_API_SECRET ? 'set' : 'not set'
+});
+
+try {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+    secure: true
+  });
+  console.log('Cloudinary configured successfully');
+} catch (error) {
+  console.error('Cloudinary configuration error:', error);
+}
 
 // Check if Cloudinary is properly configured
 const isCloudinaryConfigured = () => {
-  return process.env.CLOUDINARY_CLOUD_NAME && 
+  const configured = process.env.CLOUDINARY_CLOUD_NAME && 
          process.env.CLOUDINARY_API_KEY && 
          process.env.CLOUDINARY_API_SECRET;
+  console.log('Cloudinary configuration status:', configured);
+  return configured;
+};
+
+// Test Cloudinary connection
+const testCloudinaryConnection = async () => {
+  try {
+    if (!isCloudinaryConfigured()) {
+      return { success: false, message: 'Cloudinary not configured' };
+    }
+    
+    // Simple API test
+    const result = await cloudinary.api.ping();
+    console.log('Cloudinary connection test:', result);
+    return { success: true, result };
+  } catch (error) {
+    console.error('Cloudinary connection test failed:', error);
+    return { success: false, error: error.message };
+  }
 };
 
 // Upload file to Cloudinary
@@ -25,6 +56,25 @@ const uploadToCloudinary = async (file, folder = 'uploads') => {
       cloud_name: !!process.env.CLOUDINARY_CLOUD_NAME,
       api_key: !!process.env.CLOUDINARY_API_KEY,
       api_secret: !!process.env.CLOUDINARY_API_SECRET
+    });
+    
+    // Validate file input
+    if (!file) {
+      throw new Error('No file provided');
+    }
+    if (!file.name) {
+      throw new Error('File has no name property');
+    }
+    if (!file.data && !file.mv) {
+      throw new Error('File has no data or mv property');
+    }
+    
+    console.log('File validation passed, file properties:', {
+      name: file.name,
+      size: file.size,
+      hasData: !!file.data,
+      hasMv: typeof file.mv === 'function',
+      mimetype: file.mimetype
     });
     
     // Check if Cloudinary is configured
@@ -160,5 +210,6 @@ const deleteFromCloudinary = async (publicId) => {
 module.exports = {
   cloudinary,
   uploadToCloudinary,
-  deleteFromCloudinary
+  deleteFromCloudinary,
+  testCloudinaryConnection
 };

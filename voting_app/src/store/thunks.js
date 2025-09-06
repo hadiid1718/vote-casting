@@ -195,3 +195,52 @@ export const voteForCandidate = createAsyncThunk(
     }
   }
 );
+
+// Student Management Thunks
+export const addStudent = createAsyncThunk(
+  'students/addStudent',
+  async (studentData, { rejectWithValue }) => {
+    try {
+      const response = await voterService.addStudent(studentData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export const fetchAllStudents = createAsyncThunk(
+  'students/fetchAllStudents',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await voterService.getAllStudents();
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export const updateStudent = createAsyncThunk(
+  'students/updateStudent',
+  async ({ studentId, studentData }, { rejectWithValue }) => {
+    try {
+      const response = await voterService.updateStudent(studentId, studentData);
+      return response;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
+
+export const deleteStudent = createAsyncThunk(
+  'students/deleteStudent',
+  async (studentId, { rejectWithValue }) => {
+    try {
+      await voterService.deleteStudent(studentId);
+      return studentId;
+    } catch (error) {
+      return rejectWithValue(error);
+    }
+  }
+);
