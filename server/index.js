@@ -12,6 +12,11 @@ const { updateElectionStatusByTime } = require('./controllers/electionController
 
 
 
+const app = express();
+
+
+
+
 app.use(express.static(path.join(__dirname, "build")));
 
 app.get("*", (req, res) => {
@@ -49,7 +54,6 @@ console.log('Environment check:', {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? 'set' : 'not set'
 });
 
-const app = express();
 app.use(express.json({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
 // CORS configuration for production and development
