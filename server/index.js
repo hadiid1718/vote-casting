@@ -11,6 +11,15 @@ const { notFound, errorHandler} = require("./middleware/errorMiddleware")
 const { updateElectionStatusByTime } = require('./controllers/electionController');
 
 
+
+app.use(express.static(path.join(__dirname, "build")));
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "build", "index.html"));
+});
+
+
+
 // Ensure necessary directories exist
 const ensureDirectoriesExist = () => {
   const directories = [
@@ -59,6 +68,9 @@ app.use(upload())
 
 // Serve uploaded files statically
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// Serve public files (for debugging tools)
+app.use(express.static(path.join(__dirname, 'public')));
 
 app.use("/api", Routes);
 app.use(notFound)

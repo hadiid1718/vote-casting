@@ -199,9 +199,12 @@ const refreshToken = async (req, res, next) => {
 // PROTECTED (Admin Only)
 const addStudent = async (req, res, next) => {
   try {
+    console.log('👥 addStudent called - Adding new student');
     const { studentId, fullName, email, department, departmentCode, year, password } = req.body;
+    console.log(`👥 Student data received: ${fullName} (${studentId})`);
     
     if (!studentId || !fullName || !email || !password) {
+      console.log('⚠️ Missing required fields for student registration');
       return next(new HttpError("Please provide studentId, fullName, email, and password", 422));
     }
 
@@ -239,14 +242,20 @@ const addStudent = async (req, res, next) => {
       isAdmin: false,
     });
 
+    console.log(`✅ Student created successfully: ${fullName} (${studentId})`);
+
     // Return student data without password
     const { password: _, ...studentData } = newStudent.toObject();
     res.status(201).json({ 
+      success: true,
       message: `Student ${fullName} added successfully!`,
-      student: studentData
+      student: studentData,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    return next(new HttpError("Failed to add student", 422));
+    console.error('❌ Error adding student:', error.message);
+    console.error('❌ Full error:', error);
+    return next(new HttpError(`Failed to add student: ${error.message}`, 422));
   }
 };
 
@@ -255,9 +264,34 @@ const addStudent = async (req, res, next) => {
 // PROTECTED (Admin Only)
 const getAllStudents = async (req, res, next) => {
   try {
+    console.log('📊 getAllStudents called - Admin requesting student list');
+    
     const students = await voterModel.find({ isAdmin: false }).select("-password").sort({ createdAt: -1 });
-    res.json(students);
+    
+    console.log(`📊 Found ${students.length} students in database`);
+    
+    if (students.length === 0) {
+      console.log('⚠️ No students found in database');
+      return res.json({
+        success: true,
+        message: "No students found",
+        data: [],
+        count: 0
+      });
+    }
+    
+    // Enhanced response with metadata
+    res.json({
+      success: true,
+      message: `Successfully retrieved ${students.length} students`,
+      data: students,
+      count: students.length,
+      timestamp: new Date().toISOString()
+    });
+    
   } catch (error) {
+    console.error('❌ Error in getAllStudents:', error.message);
+    console.error('❌ Full error:', error);
     return next(new HttpError("Failed to fetch students", 500));
   }
 };
