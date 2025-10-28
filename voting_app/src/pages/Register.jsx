@@ -12,7 +12,7 @@ const Register = () => {
     password: "",
     password2: "",
   });
-  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL || 'castifyadmin@gmail.com';
+  const adminEmail = import.meta.env.VITE_ADMIN_EMAIL ;
   const [emailValid, setEmailValid] = useState(true);
   const dispatch = useDispatch();
   const navigate = useNavigate();
