@@ -16,15 +16,6 @@ const app = express();
 
 
 
-
-app.use(express.static(path.join(__dirname, "build")));
-
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "build", "index.html"));
-});
-
-
-
 // Ensure necessary directories exist
 const ensureDirectoriesExist = () => {
   const directories = [
@@ -57,15 +48,28 @@ console.log('Environment check:', {
 app.use(express.json({ extended: true }));
 app.use(express.urlencoded({ extended: true }));
 // CORS configuration for production and development
-const allowedOrigins = [
-  "http://localhost:5173", // Development
-  "http://localhost:3000", // Development alternative
-  process.env.FRONTEND_URL, // Production URL from environment variable
-].filter(Boolean); // Remove undefined values
+const isProd = (process.env.NODE_ENV || 'development') === 'production';
 
-app.use(cors({ 
-  credentials: true, 
-  origin: allowedOrigins
+const allowedOrigins = [
+  process.env.FRONTEND_URL, // Production URL from environment variable
+].filter(Boolean);
+
+app.use(cors({
+  credentials: true,
+  origin: (origin, callback) => {
+    // Allow non-browser clients (curl/postman) with no Origin
+    if (!origin) return callback(null, true);
+
+    // In dev, allow any localhost/127.0.0.1 port (Vite often shifts ports)
+    if (!isProd) {
+      const isLocalhost = /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+      if (isLocalhost) return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    return callback(new Error(`CORS blocked origin: ${origin}`));
+  },
 }));
 
 app.use(upload())
@@ -77,8 +81,20 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use("/api", Routes);
-app.use(notFound)
-app.use(errorHandler)
+
+// API-only 404 + error handling
+app.use('/api', notFound);
+app.use('/api', errorHandler);
+
+// If a React build exists, serve it (production usage)
+const buildDir = path.join(__dirname, 'build');
+const buildIndex = path.join(buildDir, 'index.html');
+if (fs.existsSync(buildIndex)) {
+  app.use(express.static(buildDir));
+  app.get('*', (req, res) => {
+    res.sendFile(buildIndex);
+  });
+}
 
 const PORT = process.env.PORT || 3000;
 
